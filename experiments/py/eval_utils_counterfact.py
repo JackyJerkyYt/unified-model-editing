@@ -17,7 +17,9 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from dsets import AttributeSnippets
 from util.generate import generate_fast
 from util.perplexity import perplexity
+import sys
 
+sys.path.append('/home/jackywong/unified-model-editing-forked/unified-model-editing/experiments/py')##Remember to add /experiments/py after the part
 
 def compute_rewrite_quality_counterfact(
     model: AutoModelForCausalLM,

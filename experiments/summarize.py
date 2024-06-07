@@ -7,7 +7,7 @@ import sys
 import numpy as np
 from scipy.stats import hmean
 
-sys.path.append('/home/akshatgupta/KnowledgeEditing_local/llama-study/unified-model-editing-internal')
+# sys.path.append('/home/akshatgupta/KnowledgeEditing_local/llama-study/unified-model-editing-internal')
 from util.globals import *
 
 
