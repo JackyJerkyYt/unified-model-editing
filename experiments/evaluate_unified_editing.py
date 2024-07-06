@@ -10,7 +10,7 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 #sys.path.append('/path/to/unified-model-editing')
-sys.path.append('/home/jackywong/unified-model-editing-forked/unified-model-editing')
+sys.path.append('/data/jacky/jackywong/unified-model-editing-forked/unified-model-editing')
 
 from baselines.ft import FTHyperParams, apply_ft_to_model
 from baselines.mend import MENDHyperParams, MendRewriteExecutor
@@ -101,6 +101,11 @@ def main(
     except:
         params_path = HPARAMS_DIR / alg_name / hparams_fname
         hparams = params_class.from_json(params_path)
+    
+    print("!"*100)
+    print("params has been loaded!!!!")
+    print("mom2_update_weight:", hparams.mom2_update_weight)
+    print("!"*100)
 
     if not (run_dir / "params.json").exists():
         #shutil.copyfile(params_path, run_dir / "params.json")
@@ -172,13 +177,15 @@ def main(
     sampled_indices = json.load(f)
 
     # Iterate through dataset
+    THE_R = 4
+    dSet = "MCF"
     for r, e in enumerate(range(0, len(sampled_indices[args.sample_num]), num_edits)):
         record_chunks = []
         for element_index in sampled_indices[args.sample_num][e: min(e+num_edits, len(sampled_indices[args.sample_num]))]:
             datapoint = dataset.__getitem__(element_index)
             record_chunks.append(datapoint)
 
-        if r == 1000:
+        if r == THE_R:
             break
 
         case_result_template = str(run_dir / "{}_{}_edits-case_{}.json")
@@ -232,6 +239,9 @@ def main(
             **args_conserve_memory,
             **etc_args,
         )
+
+        if r == THE_R - 1:
+            model.save_pretrained("/data/jacky/jackywong/unified-model-editing-forked/unified-model-editing/saved_model/gpt2-xl" + f'r-{THE_R}' + "_MEMIT" + f"batchSize-{num_edits}" + f"_mom2WeightUpdate-{hparams.mom2_update_weight}" + f"_mom2NSamples-{hparams.mom2_n_samples}" + f"_dataset-{dSet}")
 
         exec_time = time() - start
         print("Execution took", exec_time)

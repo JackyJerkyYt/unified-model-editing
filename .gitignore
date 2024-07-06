@@ -1,0 +1,7 @@
+*.log
+*.pyc
+saved_model/
+saved_tokenizer/
+*.json
+*.npz
+*.npy

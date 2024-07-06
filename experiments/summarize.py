@@ -8,6 +8,8 @@ import numpy as np
 from scipy.stats import hmean
 
 # sys.path.append('/home/akshatgupta/KnowledgeEditing_local/llama-study/unified-model-editing-internal')
+sys.path.append('/data/jacky/jackywong/unified-model-editing-forked/unified-model-editing')
+
 from util.globals import *
 
 

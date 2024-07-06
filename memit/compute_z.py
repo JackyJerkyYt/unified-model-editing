@@ -45,12 +45,27 @@ def compute_z(
         target_ids = target_ids[1:]
 
 
-    # Compile list of rewriting and KL x/y pairs
+    # # Compile list of rewriting and KL x/y pairs
+    # rewriting_prompts, kl_prompts = [
+    #     context.format(request["prompt"]) + tok.decode(target_ids[:-1])
+    #     for context_types in context_templates
+    #     for context in context_types
+    # ],  ["{} is a"]
+    # all_prompts = rewriting_prompts + kl_prompts
+
+    the_whole_prompt = request["prompt"].format(request["subject"]) + request["target_new"]["str"]
+    # the_kl = "Ignoring the fact that '{}'.".format(the_whole_prompt)
+    the_kl = "Ignoring literally ANYTHING that is related to the fact that '{}'.".format(the_whole_prompt)
+
+    t = ["{} is a"] 
+    tt = []
+    for x in t:
+        tt.append(the_kl + x)
     rewriting_prompts, kl_prompts = [
         context.format(request["prompt"]) + tok.decode(target_ids[:-1])
         for context_types in context_templates
         for context in context_types
-    ], ["{} is a"]
+    ],  t
     all_prompts = rewriting_prompts + kl_prompts
 
     input_tok = tok(

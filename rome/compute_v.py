@@ -32,10 +32,16 @@ def compute_v(
     ][0]
 
     # Compile list of rewriting and KL x/y pairs
+    the_whole_prompt = request["prompt"].format(request["subject"]) + request["target_new"]["str"]
+    # the_kl = "Ignoring the fact that '{}'.".format(the_whole_prompt)
+    the_kl = "Ignoring literally ANYTHING that is related to the fact that '{}'.".format(the_whole_prompt)
+
+    t = ["{} is a"] 
+    tt = [the_kl + t[0]]
     rewriting_prompts, kl_prompts = [
         context.format(request["prompt"]) + tok.decode(target_ids[:-1])####NOTE:adds all token of target except last token. This is the Language Modelling objective.
         for context in context_templates
-    ], ["{} is a"]
+    ], t
     ###NOTE: KL prompt is just ["{} is a"]. Can we have a more exhaustive list of re-write prompts?
     all_prompts = rewriting_prompts + kl_prompts
 

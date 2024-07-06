@@ -13,7 +13,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import sys
 
-sys.path.append('/home/jackywong/unified-model-editing-forked/unified-model-editing/experiments/py')##Remember to add /experiments/py after the part
+sys.path.append('/data/jacky/jackywong/unified-model-editing-forked/unified-model-editing/experiments/py')##Remember to add /experiments/py after the part
 from eval_utils_counterfact import *
 
 from dsets import AttributeSnippets
