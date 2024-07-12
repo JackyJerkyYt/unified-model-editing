@@ -59,6 +59,7 @@ def main(
     conserve_memory: bool,
     sequential: bool,
     downstream_eval_steps: int,
+    mom2_weight_update: float,
     dir_name: str,
     num_edits: int = 1,
     use_cache: bool = False,
@@ -102,6 +103,8 @@ def main(
         params_path = HPARAMS_DIR / alg_name / hparams_fname
         hparams = params_class.from_json(params_path)
     
+    ##modifying the hparams.mom2_update_weight
+    hparams.mom2_update_weight = mom2_weight_update
     print("!"*100)
     print("params has been loaded!!!!")
     print("mom2_update_weight:", hparams.mom2_update_weight)
@@ -241,7 +244,7 @@ def main(
         )
 
         if r == THE_R - 1:
-            model.save_pretrained("/data/jacky/jackywong/unified-model-editing-forked/unified-model-editing/saved_model/gpt2-xl" + f'r-{THE_R}' + "_MEMIT" + f"batchSize-{num_edits}" + f"_mom2WeightUpdate-{hparams.mom2_update_weight}" + f"_mom2NSamples-{hparams.mom2_n_samples}" + f"_dataset-{dSet}")
+            model.save_pretrained(f"/data/jacky/jackywong/unified-model-editing-forked/unified-model-editing/saved_model/{model_name}" + f'_r-{THE_R}' + "_MEMIT" + f"batchSize-{num_edits}" + f"_mom2WeightUpdate-{hparams.mom2_update_weight}" + f"_mom2NSamples-{hparams.mom2_n_samples}" + f"_dataset-{dSet}")
 
         exec_time = time() - start
         print("Execution took", exec_time)
@@ -309,6 +312,12 @@ def main(
                     nethook.get_parameter(model, k)[...] = v.to("cuda")
 
         print("Evaluation took", time() - start)
+    
+    print("!"*20)
+    print("task has finished")
+    print("Here is the hparams:")
+    print(hparams)
+    print("!"*20)
         
 def extract_model_original_weights(model, hparams):
     weights = {
@@ -462,6 +471,12 @@ if __name__ == "__main__":
         default=False,
         help="If we want to do sequential editing or not",
     )
+    parser.add_argument(
+        "--mom2_weight_update",
+        type=float,
+        default=False,
+        help="the mom2_weight_update",
+    )
 
 
     parser.set_defaults(skip_generation_tests=False, conserve_memory=False)
@@ -480,7 +495,9 @@ if __name__ == "__main__":
         args.conserve_memory,
         args.sequential,
         args.downstream_eval_steps,
+        args.mom2_weight_update,
         dir_name=args.alg_name,
         num_edits=args.num_edits,
         use_cache=args.use_cache,
+
     )
