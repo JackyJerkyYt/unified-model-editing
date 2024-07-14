@@ -178,7 +178,6 @@ def main(
 
     # Iterate through dataset
     THE_R = 4
-    dSet = "MCF"
     for r, e in enumerate(range(0, len(sampled_indices[args.sample_num]), num_edits)):
         record_chunks = []
         for element_index in sampled_indices[args.sample_num][e: min(e+num_edits, len(sampled_indices[args.sample_num]))]:
@@ -241,7 +240,7 @@ def main(
         )
 
         if r == THE_R - 1:
-            model.save_pretrained("/data/jacky/jackywong/unified-model-editing-forked/unified-model-editing/saved_model/gpt2-xl" + f'r-{THE_R}' + "_MEMIT" + f"batchSize-{num_edits}" + f"_mom2WeightUpdate-{hparams.mom2_update_weight}" + f"_mom2NSamples-{hparams.mom2_n_samples}" + f"_dataset-{dSet}")
+            model.save_pretrained("/data/jacky/jackywong/unified-model-editing-forked/unified-model-editing/saved_model/gpt2-xl" + f'r-{THE_R}' + "_MEMIT" + f"batchSize-{num_edits}" + f"_mom2WeightUpdate-{hparams.mom2_update_weight}" + f"_mom2NSamples-{hparams.mom2_n_samples}" + f"_dataset-{ds_name}")
 
         exec_time = time() - start
         print("Execution took", exec_time)
