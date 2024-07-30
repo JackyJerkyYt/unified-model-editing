@@ -104,7 +104,7 @@ def main(
     
     print("!"*100)
     print("params has been loaded!!!!")
-    print("mom2_update_weight:", hparams.mom2_update_weight)
+    print("mom2_update_weight:", hparams.mom2_update_weight if hasattr(hparams, "mom2_update_weight") else "NONE")
     print("!"*100)
 
     if not (run_dir / "params.json").exists():
@@ -240,8 +240,9 @@ def main(
         )
 
         if r == THE_R - 1:
-            model.save_pretrained("/data/jacky/jackywong/unified-model-editing-forked/unified-model-editing/saved_model/gpt2-xl" + f'r-{THE_R}' + "_MEMIT" + f"batchSize-{num_edits}" + f"_mom2WeightUpdate-{hparams.mom2_update_weight}" + f"_mom2NSamples-{hparams.mom2_n_samples}" + f"_dataset-{ds_name}")
-
+            model.save_pretrained(f"/data/jacky/jackywong/unified-model-editing-forked/unified-model-editing/saved_model/{model_name}" + f'r-{THE_R}' + "_MEMIT" + f"batchSize-{num_edits}" + f"_mom2WeightUpdate-{hparams.mom2_update_weight if hasattr(hparams, 'mom2_update_weight') else 'NONE'}" + f"_mom2NSamples-{hparams.mom2_n_samples}" + f"_dataset-{ds_name}" + f"_sequential-{sequential}")
+            print("!!!!!")
+            print(f"saving the model at", "/data/jacky/jackywong/unified-model-editing-forked/unified-model-editing/saved_model/{model_name}" + f'r-{THE_R}' + "_MEMIT" + f"batchSize-{num_edits}" + f"_mom2WeightUpdate-{hparams.mom2_update_weight if hasattr(hparams, 'mom2_update_weight') else 'NONE'}" + f"_mom2NSamples-{hparams.mom2_n_samples}" + f"_dataset-{ds_name}" + f"_sequential-{sequential}")
         exec_time = time() - start
         print("Execution took", exec_time)
 
