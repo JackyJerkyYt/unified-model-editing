@@ -8,11 +8,11 @@ from glue_eval.cola_eval import COLAEval
 from glue_eval.rte_eval import RTEEval
 
 class GLUEEval():
-    def __init__(self, model, tokenizer):
-        self.sst_eval = SSTEval(model, tokenizer)
-        self.mrpc_eval = MRPCEval(model, tokenizer)
-        self.cola_eval = COLAEval(model, tokenizer)
-        self.rte_eval = RTEEval(model, tokenizer)
+    def __init__(self, model, tokenizer, number_of_tests = None, number_of_few_shots = 0):
+        self.sst_eval = SSTEval(model, tokenizer, number_of_tests = number_of_tests, number_of_few_shots = number_of_few_shots)
+        self.mrpc_eval = MRPCEval(model, tokenizer, number_of_tests = number_of_tests, number_of_few_shots = number_of_few_shots)
+        self.cola_eval = COLAEval(model, tokenizer, number_of_tests = number_of_tests, number_of_few_shots = number_of_few_shots)
+        self.rte_eval = RTEEval(model, tokenizer, number_of_tests = number_of_tests, number_of_few_shots = number_of_few_shots)
 
     def _save_generations(self, record_path, generations, task):
         #store individual generation file
