@@ -18,7 +18,7 @@ class NLIEval():
         self.model = model
         self.tokenizer = tokenizer
         self.few_shots, self.eval_dataset = load_data_split('glue_eval/dataset/nli.pkl', number_of_few_shots) 
-        self.eval_dataset = self.eval_dataset[:number_of_tests]
+        self.eval_dataset = self.eval_dataset[:number_of_tests] if not (number_of_tests is None) else self.eval_dataset
 
         self._initialize_prompts()
         self.allowed_answers = ["True", "False"]
