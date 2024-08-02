@@ -21,7 +21,6 @@ class NLIEval():
         self.eval_dataset = self.eval_dataset[:number_of_tests] if not (number_of_tests is None) else self.eval_dataset
 
         self._initialize_prompts()
-        self.allowed_answers = ["True", "False"]
     def _initialize_prompts(self):
         self.postfix_prompt = 'True or False? answer:' 
         self.few_shot_context = ""
@@ -142,7 +141,7 @@ class NLIEval():
                 'gen_text_new': gen_text1,
                 'answer_new': 1 if prob_true > prob_false else 0,
                 'correct': answer == label,
-                # 'invalid': True if answer == -1 else False
+                'invalid': True if answer == -1 else False
             }
             stored_generations.append(exp_temp_dict)
 

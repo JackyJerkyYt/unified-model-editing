@@ -9,7 +9,7 @@ import numpy as np
 MAX_NUMBER_OF_FEW_SHOTS = 50
 ## IMPORTANT, few shot learning is important as it allow the answer coming out from the model to be formatted. 
 
-class SENTIMENT_ANALYSIS_Eval():
+class DIALOGUE_Eval():
     def __init__(self, model, tokenizer, number_of_tests = None, number_of_few_shots = 0, eval_split = 'validation'):
         assert number_of_few_shots < MAX_NUMBER_OF_FEW_SHOTS, f"The number of few shots should not exceed {number_of_few_shots}"
         
@@ -17,40 +17,47 @@ class SENTIMENT_ANALYSIS_Eval():
         self.number_of_few_shots = number_of_few_shots
         self.model = model
         self.tokenizer = tokenizer
-        self.few_shots, self.eval_dataset = load_data_split('glue_eval/dataset/sentiment_analysis.pkl', number_of_few_shots) 
+        self.few_shots, self.eval_dataset = load_data_split('glue_eval/dataset/dialogue.pkl', number_of_few_shots) 
         self.eval_dataset = self.eval_dataset[:number_of_tests] if not (number_of_tests is None) else self.eval_dataset
 
         self._initialize_prompts()
 
-    def _initialize_prompts(self):
-        self.prefix_prompt = "For each snippet of text,label the sentiment of the text as positive or negative.The answer should be exact 'positive' or 'negative'. text:"
-        self.glue_prompt = ""
-        self.postfix_prompt = 'answer:' 
+    def _initialize_prompts(self): 
+        self.postfix_prompt = "The answer should be exact A or B or C or D. Among A through D, the answer is"
         self.few_shot_context = ""
         for _, few_shot in enumerate(self.few_shots):
-            self.few_shot_context += f'{self.prefix_prompt} {few_shot["sentence"]} {self.postfix_prompt} {("positive" if few_shot['label'] == "1" else "negative")}\n'  
+            self.few_shot_context += f"Q: Given the following: {few_shot['article']}\n Which choice is correct? Answer Chioces:\n (A){few_shot["options"][0]} \n (B){few_shot["options"][1]} \n (C){few_shot["options"][2]} \n (D){few_shot["options"][0]} \n {self.postfix_prompt} {few_shot['answers']}"
     
     def _create_prompt(self, example):
-        input_prompt =  f'{self.prefix_prompt} {example["sentence"]} {self.postfix_prompt}'
-        return input_prompt, example['sentence'], self._get_label(example['label'])
+        input_prompt =   f"Q: Given the following: {example['article']}\n Which choice is correct? Answer Chioces:\n (A){example["options"][0]} \n (B){example["options"][1]} \n (C){example["options"][2]} \n (D){example["options"][0]} \n {self.postfix_prompt}"
+        return input_prompt, example['options'], example['article'], self._get_label(example['answers'])
     
     def _get_answer(self, generated_text):
         answer_text = generated_text.split(self.postfix_prompt)[-1].strip().strip()
 
-        if 'positive' in answer_text:
-            return 1
-        elif 'negative' in answer_text:
+        if 'A' == answer_text:
             return 0
+        if 'B' == answer_text:
+            return 1
+        if 'C' == answer_text:
+            return 2
+        if 'D' == answer_text:
+            return 3
         return -1
 
     def _get_label(self, example_label):
-        if 'positive' == example_label:
+        if 'A' == example_label:
+            return 0
+        if 'B' == example_label:
             return 1
-        return 0
-
+        if 'C' == example_label:
+            return 2
+        if 'D' == example_label:
+            return 3
+        
     def evaluate(self, gen_len = 3, print_logs = False):
-        positive_tok, negative_tok = (self.tokenizer(f" {n}")["input_ids"] for n in ['positive', 'negative'])
-        positive_len, negative_len = (len(n) for n in [positive_tok, negative_tok])
+        a_tok, b_tok, c_tok, d_tok = (self.tokenizer(f" {n}\n")["input_ids"][-2:] for n in ['A', 'B', 'C', 'D'])
+        a_len, b_len, c_len, d_len = (len(n) for n in [a_tok, b_tok, c_tok, d_tok])
 
         correct = 0
         incorrect = 0
@@ -68,49 +75,57 @@ class SENTIMENT_ANALYSIS_Eval():
 
         start = time.time()
         for s, example in enumerate(self.eval_dataset):
-            input_prompt, sentence, label = self._create_prompt(example)
+            input_prompt, options, article, label = self._create_prompt(example)
             input_prompt_ids = self.tokenizer.encode(input_prompt, return_tensors='pt').to('cuda')
             input_prompt_text = self.tokenizer.decode(input_prompt_ids[0], skip_special_tokens=True)
 
-            max_len = input_prompt_ids.shape[1] + gen_len
-
-            output = self.model.generate(input_prompt_ids,max_length = max_len, do_sample = False)
-            generated_text = self.tokenizer.decode(output[0], skip_special_tokens=True)
-
-            answer = self._get_answer(generated_text)
-            predictions.append(answer)
-            labels.append(label)
-
-            #### EVALUATE NEW ACC 
             prefix_tok_len = len(self.tokenizer(input_prompt)["input_ids"])
+            print(prefix_tok_len)
 
-            prompt_tok = self.tokenizer([f"{input_prompt} {suffix}" for suffix in ['positive', 'negative']], return_tensors="pt").to('cuda')
-            logits = self.model(**prompt_tok).logits.to('cuda')
+            probs = [0, 0, 0, 0]
+            gen_texts = [0, 0, 0, 0]
+            gen_texts2 = [0, 0, 0, 0]
+            dic = {0: [a_tok, a_len], 1: [b_tok, b_len], 2: [c_tok, c_len], 3: [d_tok, d_len]}
+            
+            max_len = input_prompt_ids.shape[1] + gen_len
+            suffixes = ['A', 'B', 'C', 'D']
+            for i in range(4):
+                prompt_tok = self.tokenizer([f"{input_prompt} {suffixes[i]}\n"], return_tensors="pt").to('cuda')
+                logits = self.model(**prompt_tok).logits.to('cuda')
 
-            probs = [0, 0]
-            gen_texts = [0,0]
-            for i in range(2):
-                cur_len = positive_len if i % 2 == 0 else negative_len
+                cur_len = dic[i][1]
 
                 for j in range(cur_len):
-                    cur_tok = (positive_tok if i % 2 == 0 else negative_tok)[j]
+                    cur_tok = dic[i][0][j]
                     probs[i] += -torch.nn.functional.log_softmax(
-                    logits[i, prefix_tok_len + j - 1, :], dim=0
+                    logits[0, prefix_tok_len + j - 1, :], dim=0
                     )[cur_tok].item()
                 probs[i] /= cur_len
 
-                gen_texts[i] = self.tokenizer.decode(logits[i, prefix_tok_len - 1 : prefix_tok_len + cur_len - 1, :].argmax(dim = -1))
+                gen_texts[i] = self.tokenizer.decode(logits[0, prefix_tok_len - 1 : prefix_tok_len + cur_len - 1, :].argmax(dim = -1))
 
-            prob_true = np.exp(-probs[0])
-            prob_false = np.exp(-probs[1])  
-
-            gen_text1 = gen_texts[0]
-            gen_text2 = gen_texts[1]
-
-            print(f"prob_positive: {prob_true}, prob_negative: {prob_false}")
-
+            output = self.model.generate(input_prompt_ids,max_length = max_len, do_sample = False)
+            generated_text = self.tokenizer.decode(output[0], skip_special_tokens=True)
+            answer = self._get_answer(generated_text)
+            prob_a = np.exp(-probs[0])
+            prob_b = np.exp(-probs[1])  
+            prob_c = np.exp(-probs[2])  
+            prob_d = np.exp(-probs[3]) 
+            predictions.append(answer)
+            labels.append(label)
+            def hi(prob_a, prob_b, prob_c, prob_d):
+                if prob_a > max(prob_b, prob_c, prob_d):
+                    return 0
+                elif prob_b > max(prob_a, prob_c, prob_d):
+                    return 1
+                elif prob_c > max(prob_b, prob_a, prob_d):
+                    return 2
+                elif prob_d > max(prob_b, prob_c, prob_a):
+                    return 3
+                return -1
             
-            predictions_new.append(1 if prob_true > prob_false else 0)
+            new_answer = hi(prob_a, prob_b, prob_c, prob_d)
+            predictions_new.append(new_answer)
             print(f"prediction: {answer}, true: {label}")
             if answer == -1:
                 invalid += 1
@@ -133,17 +148,20 @@ class SENTIMENT_ANALYSIS_Eval():
                         neg_incorrect += 1
 
             exp_temp_dict = {
-                'sentence': sentence,
+                'options': options,
+                'article': article,
                 'label': label,
                 'input_prompt': input_prompt_text,
                 'generated_text': generated_text.replace(input_prompt_text, ''),
                 'answer': answer,
-                'prob_true': prob_true,
-                'prob_false': prob_false,
-                'gen_text_new': gen_text1,
-                'answer_new': 1 if prob_true > prob_false else 0,
+                'invalid': True if answer == -1 else False,
                 'correct': answer == label,
-                'invalid': True if answer == -1 else False
+                'prob_a': prob_a,
+                'prob_b': prob_b,
+                'prob_c': prob_c,
+                'prob_d': prob_d,
+                'answer_new': hi(prob_a, prob_b, prob_c, prob_d),
+                'correct_new': new_answer == label,
             }
             stored_generations.append(exp_temp_dict)
 
@@ -177,5 +195,5 @@ if __name__ == '__main__':
     model = AutoModelForCausalLM.from_pretrained(model_name)
     model.to('cuda')
 
-    sentiment_analysis_eval = SENTIMENT_ANALYSIS_Eval(model, tokenizer)
-    sentiment_analysis_eval.evaluate(print_logs='True')
+    dialogue_eval = DIALOGUE_Eval(model, tokenizer)
+    dialogue_eval.evaluate(print_logs='True')
