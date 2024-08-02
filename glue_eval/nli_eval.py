@@ -24,7 +24,7 @@ class NLIEval():
         self.allowed_answers = ["True", "False"]
     def _initialize_prompts(self):
         self.glue_prompt = "entails the"
-        self.postfix_prompt = 'True or False? answer: ' 
+        self.postfix_prompt = 'True or False? answer:' 
         self.few_shot_context = ""
         for _, few_shot in enumerate(self.few_shots):
             self.few_shot_context += f'{few_shot["sentence1"]} entails the {few_shot["sentence2"]} {self.postfix_prompt} {("True" if few_shot['label'] == "entailment" else "False")}\n'  
