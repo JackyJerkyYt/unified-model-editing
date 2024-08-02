@@ -18,17 +18,17 @@ class SENTIMENT_ANALYSIS_Eval():
         self.model = model
         self.tokenizer = tokenizer
         self.few_shots, self.eval_dataset = load_data_split('glue_eval/dataset/sentiment_analysis.pkl', number_of_few_shots) 
-        self.eval_dataset = self.eval_dataset[:number_of_tests]
+        self.eval_dataset = self.eval_dataset[:number_of_tests] if number_of_tests is None else self.eval_dataset
 
         self._initialize_prompts()
         self.allowed_answers = [1, 0]
     def _initialize_prompts(self):
-        self.prefix_prompt = "For each snippet of text,label the sentiment of the text as positive or negative.The answer should be exact 'positive' or 'negative'. text: "
+        self.prefix_prompt = "For each snippet of text,label the sentiment of the text as positive or negative.The answer should be exact 'positive' or 'negative'. text:"
         self.glue_prompt = ""
-        self.postfix_prompt = '. True or False? answer: ' 
+        self.postfix_prompt = 'answer:' 
         self.few_shot_context = ""
         for _, few_shot in enumerate(self.few_shots):
-            self.few_shot_context += few_shot['sentence1'] + self.glue_prompt + few_shot['sentence2'] + self.postfix_prompt + ("True" if few_shot['label'] == "entailment" else False) + "\n"  
+            self.few_shot_context += f'{self.prefix_prompt} {few_shot["sentence"]} {self.postfix_prompt} {("positive" if few_shot['label'] == "1" else "negative")}\n'  
     
     def _create_prompt(self, example):
         input_prompt = self.few_shot_context + self.prefix_prompt + example['sentence1'] + self.glue_prompt + example['sentence2'] + self.postfix_prompt

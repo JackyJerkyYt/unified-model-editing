@@ -23,7 +23,6 @@ class NLIEval():
         self._initialize_prompts()
         self.allowed_answers = ["True", "False"]
     def _initialize_prompts(self):
-        self.glue_prompt = "entails the"
         self.postfix_prompt = 'True or False? answer:' 
         self.few_shot_context = ""
         for _, few_shot in enumerate(self.few_shots):
